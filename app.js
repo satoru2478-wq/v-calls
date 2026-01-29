@@ -1,182 +1,237 @@
+// UI Elements
 const intro = document.getElementById("intro");
-const connect = document.getElementById("connect");
+const lobby = document.getElementById("lobby");
+const connectPage = document.getElementById("connect");
 const callPage = document.getElementById("call");
-const controls = document.getElementById("controls");
+const linkBox = document.getElementById("link-box");
+const statusTxt = document.getElementById("call-status");
 
-// 1. Splash Screen
+// 1. Initial Flow
 setTimeout(() => {
     intro.classList.remove("active");
-    connect.classList.add("active");
-}, 2000);
+    // Check if user came from a link
+    if(location.hash.length > 2) {
+        lobby.classList.remove("active");
+        connectPage.classList.add("active");
+    } else {
+        lobby.classList.add("active");
+        // Generate Secret ID
+        const secretId = crypto.randomUUID().split('-')[0]; // Short anonymous ID
+        location.hash = secretId;
+        linkBox.value = location.href;
+    }
+}, 2500);
 
-// 2. Setup WebSocket & Room
-const socket = new WebSocket("wss://v-calls.onrender.com");
-const room = location.hash.replace("#", "") || crypto.randomUUID();
-location.hash = room;
-
-let pc;
-let localStream;
-let micOn = true;
-let isStarted = false;
-
-// 3. WebRTC Configuration
-const rtcConfig = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+document.getElementById("copy-btn").onclick = () => {
+    navigator.clipboard.writeText(linkBox.value);
+    alert("Link Copied! Send it securely.");
 };
 
-// 4. Start Button Logic
+document.getElementById("enter-room").onclick = () => {
+    lobby.classList.remove("active");
+    connectPage.classList.add("active");
+};
+
+// 2. Core Call Variables
+const socket = new WebSocket("wss://v-calls.onrender.com");
+const roomID = location.hash.replace("#", "");
+let pc, localStream, remoteStream;
+let micOn = true;
+let audioCtx, analyser, dataArray, source;
+
+// 3. Start Connection
 document.getElementById("start").onclick = async () => {
-    if (isStarted) return;
-    isStarted = true;
-
-    // UI Updates
-    connect.classList.remove("active");
+    connectPage.classList.remove("active");
     callPage.classList.add("active");
+    
+    // Get Local Mic
+    localStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { echoCancellation: true, noiseSuppression: true } 
+    });
 
-    // Initialize Audio & Visuals (Must be after user interaction)
-    await initAudioAndVisuals();
+    // Setup RTC
+    pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
 
-    // Setup Peer Connection
-    pc = new RTCPeerConnection(rtcConfig);
+    // Add tracks
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 
-    // Add Local Tracks to PC
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-    // Handle Remote Stream
+    // Handle Remote Stream (AUDIO OF OTHER PERSON)
     pc.ontrack = e => {
+        remoteStream = e.streams[0];
         const audio = document.createElement("audio");
-        audio.srcObject = e.streams[0];
+        audio.srcObject = remoteStream;
         audio.autoplay = true;
         document.body.appendChild(audio);
+        statusTxt.innerText = "Connected: Audio Live";
+        
+        // Connect Remote Audio to Visualizer
+        initVisualizer(remoteStream);
     };
 
-    // Handle ICE Candidates
     pc.onicecandidate = e => {
-        if (e.candidate) {
-            sendSignal({ type: "candidate", candidate: e.candidate });
-        }
+        if(e.candidate) send({ type: "candidate", candidate: e.candidate });
     };
 
-    // Announce presence
-    sendSignal({ type: "join" });
+    // Join
+    send({ type: "join" });
 };
 
-// 5. Signaling Handler
+// 4. Signaling
 socket.onmessage = async (e) => {
-    const data = JSON.parse(e.data);
-    
-    // Filter: Ignore messages from other rooms or yourself
-    if (data.room !== room) return;
+    const d = JSON.parse(e.data);
+    if (d.room !== roomID) return;
 
-    if (!pc) return; // Ignore if we haven't clicked start yet
-
-    try {
-        if (data.type === "join") {
-            // Someone joined, I will create the offer
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            sendSignal({ type: "offer", sdp: offer });
-        }
-        else if (data.type === "offer") {
-            await pc.setRemoteDescription(data.sdp);
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            sendSignal({ type: "answer", sdp: answer });
-        }
-        else if (data.type === "answer") {
-            await pc.setRemoteDescription(data.sdp);
-        }
-        else if (data.type === "candidate") {
-            await pc.addIceCandidate(data.candidate);
-        }
-    } catch (err) {
-        console.error(err);
+    if (d.type === "join" && pc) {
+        const off = await pc.createOffer();
+        await pc.setLocalDescription(off);
+        send({ type: "offer", sdp: off });
+    } else if (d.type === "offer" && pc) {
+        await pc.setRemoteDescription(d.sdp);
+        const ans = await pc.createAnswer();
+        await pc.setLocalDescription(ans);
+        send({ type: "answer", sdp: ans });
+    } else if (d.type === "answer" && pc) {
+        await pc.setRemoteDescription(d.sdp);
+    } else if (d.type === "candidate" && pc) {
+        await pc.addIceCandidate(d.candidate);
+    } else if (d.type === "chat") {
+        showMsg(d.msg, false);
     }
 };
 
-function sendSignal(data) {
-    data.room = room; // Tag every message with room ID
+function send(data) {
+    data.room = roomID;
     socket.send(JSON.stringify(data));
 }
 
-// 6. UI Controls
-document.body.addEventListener("click", () => {
-    controls.classList.add("show");
-    clearTimeout(window.hideUI);
-    window.hideUI = setTimeout(() => controls.classList.remove("show"), 4000);
-});
-
-document.getElementById("mute").onclick = () => {
+// 5. Buttons Logic
+document.getElementById("mute").onclick = function() {
     micOn = !micOn;
     localStream.getAudioTracks()[0].enabled = micOn;
-    document.getElementById("mute").innerText = micOn ? "🎙️" : "🔇";
+    this.innerText = micOn ? "🎙️" : "🔇";
+    this.classList.toggle("red", !micOn);
 };
 
-document.getElementById("end").onclick = () => location.reload();
+document.getElementById("end").onclick = () => location.href = location.href.split('#')[0];
 
-// 7. Visualizer Logic (Wrapped to init on click)
-async function initAudioAndVisuals() {
-    // Get Mic
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+// Chat
+const chatOverlay = document.getElementById("chat-overlay");
+const msgInput = document.getElementById("msg-input");
+document.getElementById("chat-btn").onclick = () => chatOverlay.classList.toggle("hidden");
 
-    // Three.js Setup
-    const canvas = document.getElementById("bg");
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
-    
-    renderer.setSize(innerWidth, innerHeight);
-    camera.position.z = 5;
-
-    // Visualizer Data Source
-    const audioCtx = new AudioContext();
-    const source = audioCtx.createMediaStreamSource(localStream);
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
-    source.connect(analyser);
-    
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-    // Objects
-    const group = new THREE.Group();
-    const geo = new THREE.SphereGeometry(0.06, 16, 16);
-    const mat = new THREE.MeshBasicMaterial({ color: 0x6366f1 });
-
-    for (let i = 0; i < 400; i++) {
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(
-            (Math.random() - 0.5) * 8,
-            (Math.random() - 0.5) * 8,
-            (Math.random() - 0.5) * 8
-        );
-        group.add(mesh);
+msgInput.addEventListener("keypress", (e) => {
+    if(e.key === "Enter" && msgInput.value) {
+        send({ type: "chat", msg: msgInput.value });
+        showMsg(msgInput.value, true);
+        msgInput.value = "";
     }
-    scene.add(group);
+});
+
+function showMsg(txt, isMe) {
+    const div = document.createElement("div");
+    div.className = "msg";
+    div.style.alignSelf = isMe ? "flex-end" : "flex-start";
+    div.style.background = isMe ? "rgba(99, 102, 241, 0.5)" : "rgba(255,255,255,0.2)";
+    div.innerText = txt;
+    document.getElementById("messages").appendChild(div);
+}
+
+// Speaker (Fake Toggle - OS Handles Routing usually, but we try)
+let speakerOn = false;
+document.getElementById("speaker").onclick = function() {
+    speakerOn = !speakerOn;
+    this.innerText = speakerOn ? "📢" : "🔈";
+    // Attempt to switch output if browser allows (mostly Desktop/Android chrome)
+    if('setSinkId' in AudioContext.prototype) {
+        // complex logic skipped for mobile compatibility, visual toggle for now
+    }
+};
+
+// 6. 3D FLUID VISUALIZER (Reacts to REMOTE Audio & Gyro)
+function initVisualizer(stream) {
+    // Audio Context
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 64; // Low res for blob effect
+    source.connect(analyser);
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    // Three JS Setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("bg"), alpha: true });
+    renderer.setSize(innerWidth, innerHeight);
+    camera.position.z = 3;
+
+    // Fluid Blob (High segment sphere)
+    const geometry = new THREE.SphereGeometry(1, 64, 64);
+    // Dynamic material that supports color changes
+    const material = new THREE.MeshBasicMaterial({ 
+        color: 0xffffff, 
+        wireframe: true,
+        transparent: true,
+        opacity: 0.3
+    });
+    const blob = new THREE.Mesh(geometry, material);
+    scene.add(blob);
+
+    // Original Positions for morphing
+    const originalPos = geometry.attributes.position.array.slice();
+
+    // Gyro Data
+    let gyroX = 0, gyroY = 0;
+    window.addEventListener("deviceorientation", e => {
+        gyroX = (e.gamma || 0) * 0.01;
+        gyroY = (e.beta || 0) * 0.01;
+    });
 
     // Animation Loop
+    let time = 0;
     function animate() {
         requestAnimationFrame(animate);
+        time += 0.01;
+        
         analyser.getByteFrequencyData(dataArray);
+        const volume = dataArray[4] / 255; // Bass freq
         
-        // Use average frequency for scale
-        const avg = dataArray[0] / 255;
-        group.scale.setScalar(1 + avg * 0.5);
-        group.rotation.y += 0.002;
+        // Update Color based on Volume & Time
+        const hue = (time * 20) % 360;
+        blob.material.color.setHSL(hue / 360, 0.7, 0.6);
+
+        // Update Vertices (Fluid Effect)
+        const positions = blob.geometry.attributes.position;
         
+        for (let i = 0; i < positions.count; i++) {
+            const x = originalPos[i * 3];
+            const y = originalPos[i * 3 + 1];
+            const z = originalPos[i * 3 + 2];
+
+            // Math for distortion (Simulating fluid noise)
+            const offset = 
+                Math.sin(volume * 10 + x * 2 + time) * 0.2 +
+                Math.cos(volume * 8 + y * 2 + time) * 0.2;
+
+            const scale = 1 + (offset * volume); // React to audio
+
+            positions.setXYZ(i, x * scale, y * scale, z * scale);
+        }
+        
+        blob.geometry.attributes.position.needsUpdate = true;
+
+        // Rotation & Gyro Reaction
+        blob.rotation.x += 0.003 + gyroY;
+        blob.rotation.y += 0.003 + gyroX;
+
         renderer.render(scene, camera);
     }
     animate();
 
-    // Resize Handler
     window.addEventListener("resize", () => {
+        renderer.setSize(innerWidth, innerHeight);
         camera.aspect = innerWidth / innerHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(innerWidth, innerHeight);
-    });
-
-    // Mobile Gyro
-    window.addEventListener("deviceorientation", e => {
-        if(e.gamma) scene.rotation.y = e.gamma * 0.002;
-        if(e.beta) scene.rotation.x = e.beta * 0.002;
     });
 }
