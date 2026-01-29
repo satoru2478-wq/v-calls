@@ -5,46 +5,35 @@ import path from 'path';
 
 const PORT = process.env.PORT || 3000;
 
-// 1. Create HTTP Server to serve HTML, CSS, JS
+// Serve HTML/CSS/JS files
 const server = createServer((req, res) => {
-    // Default to index.html
     let filePath = req.url === '/' ? '/index.html' : req.url;
     filePath = "." + filePath;
 
-    // Map extension to MIME type
-    const extname = String(path.extname(filePath)).toLowerCase();
-    const mimeTypes = {
-        '.html': 'text/html',
-        '.js': 'text/javascript',
-        '.css': 'text/css',
-    };
+    const ext = String(path.extname(filePath)).toLowerCase();
+    const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
+    const type = mime[ext] || 'application/octet-stream';
 
-    const contentType = mimeTypes[extname] || 'application/octet-stream';
-
-    // Read and serve file
     if (existsSync(filePath)) {
-        res.writeHead(200, { 'Content-Type': contentType });
+        res.writeHead(200, { 'Content-Type': type });
         res.end(readFileSync(filePath));
     } else {
         res.writeHead(404);
-        res.end('404 Not Found');
+        res.end();
     }
 });
 
-// 2. Attach WebSocket to the same HTTP server
+// WebSocket Server
 const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
-    ws.on("message", (data) => {
-        // Broadcast to others
-        wss.clients.forEach((client) => {
-            if (client !== ws && client.readyState === 1) {
-                client.send(data.toString());
-            }
+    ws.on("error", console.error);
+    ws.on("message", (msg) => {
+        // Broadcast to all clients
+        wss.clients.forEach((c) => {
+            if (c !== ws && c.readyState === 1) c.send(msg.toString());
         });
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Server running on ${PORT}`));
