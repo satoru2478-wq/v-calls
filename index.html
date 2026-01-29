@@ -4,63 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>V CALLS</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="app.js" defer></script>
 </head>
 <body>
-    <canvas id="liquid-canvas"></canvas>
+    <canvas id="webgl"></canvas>
 
-    <div id="start-overlay" class="overlay">
-        <h1 class="logo">V CALLS</h1>
-        <p>Crystal Clear • Secure • 3D Audio</p>
-        <button id="enter-btn">ENTER APP</button>
-    </div>
-
-    <div id="app" class="hidden">
+    <div id="ui-layer">
         
-        <section id="home" class="page active">
-            <div class="glass card">
-                <h2>New Call</h2>
-                <button id="create-btn" class="main-btn">Generate Link</button>
+        <header>
+            <div class="logo">V CALLS</div>
+            <div class="status-indicator" id="connection-dot"></div>
+        </header>
+
+        <section id="start-screen" class="view active">
+            <div class="hero-content">
+                <h1>Sonic Presence.</h1>
+                <p>High-fidelity, encrypted audio streaming.</p>
+                <button id="enter-btn" class="primary-btn">Initialize Experience</button>
             </div>
         </section>
 
-        <section id="lobby" class="page">
-            <div class="glass card">
-                <div id="creator-view" class="hidden">
-                    <p>Share Link:</p>
-                    <div class="link-box" id="link-txt">...</div>
-                    <button id="copy-btn" class="secondary-btn">Copy</button>
-                    <div class="spinner">Waiting...</div>
+        <section id="dashboard" class="view">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Secure Link</h2>
                 </div>
-
-                <div id="joiner-view" class="hidden">
-                    <p>Ready to Connect?</p>
-                    <button id="join-btn" class="main-btn pulse">📞 Join Call</button>
+                <div class="panel-body">
+                    <p class="subtext">Generate a peer-to-peer encrypted room key.</p>
+                    <button id="create-btn" class="primary-btn full">Generate Key</button>
                 </div>
             </div>
         </section>
 
-        <section id="call" class="page">
-            <div class="status-pill" id="status">Connecting...</div>
-
-            <div class="chat-room">
-                <div id="chat-msgs" class="chat-msgs"></div>
-                <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off">
-                    <button id="send-btn">➤</button>
+        <section id="lobby" class="view">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Connection Pending</h2>
                 </div>
-            </div>
-            
-            <div class="controls-bar">
-                <button id="mute-btn" class="icon-btn">🎙️</button>
-                <button id="end-btn" class="icon-btn red">❌</button>
+                
+                <div id="creator-ui" class="hidden">
+                    <div class="code-block">
+                        <span id="link-txt">...</span>
+                        <button id="copy-btn">COPY</button>
+                    </div>
+                    <div class="loading-bar">
+                        <div class="bar"></div>
+                    </div>
+                    <p class="status-text">Awaiting remote peer...</p>
+                </div>
+
+                <div id="joiner-ui" class="hidden">
+                    <p class="subtext">Incoming secure transmission.</p>
+                    <button id="join-btn" class="primary-btn full">Connect Audio</button>
+                </div>
             </div>
         </section>
 
-        <div id="toast" class="toast">Copied!</div>
+        <section id="call" class="view">
+            <div class="call-dock">
+                <button id="mute-btn" class="dock-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                </button>
+                <button id="chat-toggle" class="dock-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                </button>
+                <button id="end-btn" class="dock-btn red">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <div id="chat-panel" class="chat-panel hidden">
+                <div id="chat-feed" class="chat-feed"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chat-input" placeholder="Message..." autocomplete="off">
+                </div>
+            </div>
+        </section>
+
     </div>
-
-    <script src="app.js"></script>
+    
+    <div id="toast">Copied to clipboard</div>
 </body>
 </html>
