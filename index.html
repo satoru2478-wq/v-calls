@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>V CALLS</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -15,27 +18,27 @@
         <h1 class="logo">V CALLS</h1>
         <div class="glass card">
             <h2>Secure Connection</h2>
-            <button id="create-btn" class="main-btn">✨ Create New Room</button>
-            <p class="small">Anonymous & Encrypted</p>
+            <button id="create-btn" class="main-btn">✨ Create Room</button>
+            <p class="small">Tap to enter Fullscreen</p>
         </div>
     </section>
 
     <section class="page" id="lobby">
         <div class="glass card">
-            <h2>Waiting Room</h2>
+            <h2>Lobby</h2>
             
             <div id="creator-ui" class="hidden">
-                <p>Send this link to your partner:</p>
+                <p>Share this link:</p>
                 <div class="link-container">
                     <input type="text" id="link-box" readonly>
                     <button id="copy-btn">📋</button>
                 </div>
-                <div class="loader">Waiting for them to join...</div>
+                <div class="loader">Waiting for partner...</div>
             </div>
 
             <div id="joiner-ui" class="hidden">
-                <p>You have been invited.</p>
-                <button id="join-btn" class="main-btn pulse">📞 Join Now</button>
+                <p>Incoming Call...</p>
+                <button id="join-btn" class="main-btn pulse">📞 Answer</button>
             </div>
         </div>
     </section>
@@ -54,7 +57,7 @@
 
             <div id="chat-box" class="hidden">
                 <div id="messages"></div>
-                <input type="text" id="chat-input" placeholder="Type a message...">
+                <input type="text" id="chat-input" placeholder="Message..." autocomplete="off">
             </div>
         </div>
     </section>
