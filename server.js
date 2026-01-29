@@ -4,8 +4,10 @@ const PORT = process.env.PORT || 3000;
 const wss = new WebSocketServer({ port: PORT });
 
 wss.on("connection", (ws) => {
+  ws.on("error", console.error);
+
   ws.on("message", (msg) => {
-    // Broadcast to everyone else (filtering happens on client side)
+    // Broadcast to everyone else
     wss.clients.forEach((client) => {
       if (client !== ws && client.readyState === 1) {
         client.send(msg.toString());
@@ -14,4 +16,4 @@ wss.on("connection", (ws) => {
   });
 });
 
-console.log("V CALLS Server Running");
+console.log("V CALLS Server Running on port " + PORT);
