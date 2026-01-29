@@ -5,54 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>V CALLS</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 </head>
 <body>
     <canvas id="bg"></canvas>
 
-    <section class="page active" id="intro">
+    <section class="page" id="home">
         <h1 class="logo">V CALLS</h1>
-        <p class="tagline">secure & anonymous</p>
+        <div class="glass card">
+            <h2>Start a New Call</h2>
+            <p class="small">Generate a secure, random room.</p>
+            <button id="create-btn" class="main-btn">✨ Create Room</button>
+        </div>
     </section>
 
     <section class="page" id="lobby">
         <div class="glass card">
-            <h2>Secure Lobby</h2>
-            <div class="input-group">
-                <input type="text" id="link-box" readonly placeholder="Generatin ID...">
-                <button id="copy-btn">📋</button>
+            <h2 id="lobby-title">Waiting...</h2>
+            
+            <div id="creator-view" class="hidden">
+                <input type="text" id="link-box" readonly>
+                <button id="copy-btn" class="secondary-btn">📋 Copy Link</button>
+                <p class="small">Share this link. Call starts when they join.</p>
             </div>
-            <p class="small">1. Copy link & send to partner<br>2. Wait for them to say "Ready"</p>
-            <button id="enter-room" class="main-btn">Enter Room</button>
-        </div>
-    </section>
 
-    <section class="page" id="connect">
-        <div class="glass card">
-            <h2>Ready?</h2>
-            <p class="small">Connect only when your partner is ready.</p>
-            <button id="start" class="main-btn pulse">🔴 CONNECT LIVE</button>
+            <div id="joiner-view" class="hidden">
+                <p class="small">You have been invited to a call.</p>
+                <button id="join-btn" class="main-btn pulse">📞 Join Call</button>
+            </div>
         </div>
     </section>
 
     <section class="page" id="call">
         <div class="call-ui">
-            <div class="status" id="call-status">Waiting for audio...</div>
+            <div class="status" id="status-text">Connecting...</div>
             
-            <div class="controls-container">
-                <div class="controls glass-panel">
-                    <button id="speaker" class="icon-btn">🔊</button>
-                    <button id="chat-btn" class="icon-btn">💬</button>
-                    <button id="mute" class="icon-btn">🎙️</button>
-                    <button id="end" class="icon-btn red">❌</button>
-                </div>
+            <div id="chat-area" class="hidden">
+                <div id="chat-msgs"></div>
+                <input type="text" id="chat-input" placeholder="Type message...">
             </div>
-        </div>
-        
-        <div id="chat-overlay" class="hidden">
-            <div class="chat-box glass">
-                <div id="messages"></div>
-                <input type="text" id="msg-input" placeholder="Type...">
+
+            <div class="controls-container">
+                <div class="controls glass-panel" id="control-bar">
+                    <button id="mute-btn" class="icon-btn">🎙️</button>
+                    <button id="chat-toggle" class="icon-btn">💬</button>
+                    <button id="end-btn" class="icon-btn red">❌</button>
+                </div>
             </div>
         </div>
     </section>
