@@ -9,26 +9,54 @@
 </head>
 <body>
     <canvas id="bg"></canvas>
+
     <section class="page active" id="intro">
         <h1 class="logo">V CALLS</h1>
-        <p class="tagline">feel the connection</p>
+        <p class="tagline">secure & anonymous</p>
     </section>
-    <section class="page" id="connect">
+
+    <section class="page" id="lobby">
         <div class="glass card">
-            <h2>Let’s Connect</h2>
-            <button id="start">Generate & Join Call</button>
-            <p class="small">Share the URL to invite</p>
+            <h2>Secure Lobby</h2>
+            <div class="input-group">
+                <input type="text" id="link-box" readonly placeholder="Generatin ID...">
+                <button id="copy-btn">📋</button>
+            </div>
+            <p class="small">1. Copy link & send to partner<br>2. Wait for them to say "Ready"</p>
+            <button id="enter-room" class="main-btn">Enter Room</button>
         </div>
     </section>
+
+    <section class="page" id="connect">
+        <div class="glass card">
+            <h2>Ready?</h2>
+            <p class="small">Connect only when your partner is ready.</p>
+            <button id="start" class="main-btn pulse">🔴 CONNECT LIVE</button>
+        </div>
+    </section>
+
     <section class="page" id="call">
         <div class="call-ui">
-            <div class="status">Connected</div>
-            <div class="controls" id="controls">
-                <button id="mute">🎙️</button>
-                <button id="end">❌</button>
+            <div class="status" id="call-status">Waiting for audio...</div>
+            
+            <div class="controls-container">
+                <div class="controls glass-panel">
+                    <button id="speaker" class="icon-btn">🔊</button>
+                    <button id="chat-btn" class="icon-btn">💬</button>
+                    <button id="mute" class="icon-btn">🎙️</button>
+                    <button id="end" class="icon-btn red">❌</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="chat-overlay" class="hidden">
+            <div class="chat-box glass">
+                <div id="messages"></div>
+                <input type="text" id="msg-input" placeholder="Type...">
             </div>
         </div>
     </section>
+
     <script src="app.js"></script>
 </body>
 </html>
