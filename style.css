@@ -1,86 +1,100 @@
 /* RESET */
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent; }
 
-/* RAINBOW BACKGROUND (Applies to body and overlay) */
+/* DYNAMIC BACKGROUND (Matches the cosmetic grey/silver look) */
 body, .overlay {
-    background: linear-gradient(135deg, #1e1b4b, #312e81, #4c0519, #0f172a);
+    background: linear-gradient(135deg, #e0e0e0, #cfd8dc, #b0bec5, #eceff1);
     background-size: 400% 400%;
-    animation: rainbow 10s ease infinite;
-    color: #fff;
-    font-family: sans-serif;
-    height: 100vh;
-    overflow: hidden;
+    animation: cosmeticBG 15s ease infinite;
+    color: #333;
+    font-family: system-ui, sans-serif;
+    height: 100vh; overflow: hidden;
 }
 
-@keyframes rainbow { 
-    0%{background-position:0% 50%} 
-    50%{background-position:100% 50%} 
-    100%{background-position:0% 50%} 
+@keyframes cosmeticBG { 
+    0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} 
 }
 
 /* CANVAS */
-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.6; }
+canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
 /* OVERLAY */
 .overlay {
     position: fixed; inset: 0; z-index: 9999;
     display: flex; flex-direction: column; justify-content: center; align-items: center;
+    background: #000; color: #fff; /* Start dark for contrast */
     transition: opacity 0.5s;
 }
 .overlay.hidden { opacity: 0; pointer-events: none; }
+.logo { font-size: 3rem; font-weight: 900; letter-spacing: 4px; margin-bottom: 10px; }
 
-.logo { font-size: 3.5rem; font-weight: 900; letter-spacing: 2px; margin-bottom: 10px; }
-
-/* ENTER BUTTON (Critical Fix) */
+/* BUTTONS */
 #enter-btn {
-    margin-top: 30px; padding: 15px 40px; font-size: 18px; font-weight: bold;
-    background: #fff; color: #000; border: none; border-radius: 30px;
-    cursor: pointer; z-index: 10000; /* FORCE TOP */
-    box-shadow: 0 0 20px rgba(255,255,255,0.4);
+    margin-top: 30px; padding: 16px 40px; font-size: 18px; font-weight: bold;
+    background: #fff; color: #000; border-radius: 30px; border:none;
+    cursor: pointer; box-shadow: 0 0 20px rgba(255,255,255,0.5);
 }
 
-/* APP LAYOUT */
-#app { position: relative; z-index: 10; height: 100%; width: 100%; }
+.main-btn {
+    width: 100%; padding: 16px; margin-top: 15px; border-radius: 12px; border: none;
+    background: #263238; color: #fff; font-weight: bold; font-size: 16px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); transition: transform 0.1s;
+}
+.main-btn:active { transform: scale(0.98); }
+
+.secondary-btn {
+    width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid #333;
+    background: transparent; color: #333; font-weight: bold;
+}
+
+/* GLASS UI */
+.glass {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 24px; padding: 30px; width: 85%; max-width: 350px; text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+/* CHAT ROOM (Integrated) */
+.chat-room {
+    position: absolute; bottom: 140px; width: 90%; max-width: 350px;
+    background: rgba(255,255,255,0.25); backdrop-filter: blur(20px);
+    border-radius: 20px; padding: 15px;
+    display: flex; flex-direction: column; gap: 10px;
+    border: 1px solid rgba(255,255,255,0.4);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+.chat-msgs {
+    height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+}
+.msg { padding: 8px 12px; border-radius: 12px; font-size: 14px; max-width: 80%; }
+.msg.them { background: rgba(255,255,255,0.6); align-self: flex-start; }
+.msg.me { background: #263238; color: #fff; align-self: flex-end; }
+
+.chat-input-area { display: flex; gap: 8px; }
+#chat-input {
+    flex: 1; padding: 10px; border-radius: 20px; border: none; outline: none;
+    background: rgba(255,255,255,0.6);
+}
+#send-btn {
+    padding: 10px 15px; border-radius: 50%; border: none; background: #263238; color: #fff;
+}
+
+/* CONTROLS */
+.controls-bar { position: absolute; bottom: 40px; display: flex; gap: 20px; }
+.icon-btn {
+    width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px;
+    background: #fff; color: #333; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+.icon-btn.red { background: #ff5252; color: #fff; }
+
+.status-pill { position: absolute; top: 50px; background: rgba(0,0,0,0.1); padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: bold;}
+.link-box { background: rgba(255,255,255,0.5); padding: 10px; border-radius: 8px; margin: 15px 0; font-family: monospace; font-size: 12px; word-break: break-all; }
 .hidden { display: none !important; }
 .page { position: absolute; inset: 0; display: none; flex-direction: column; justify-content: center; align-items: center; }
 .page.active { display: flex; }
-
-/* GLASS CARD */
-.glass {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 24px; padding: 30px; width: 85%; max-width: 350px; text-align: center;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-}
-
-/* BUTTONS */
-.main-btn {
-    width: 100%; padding: 18px; margin-top: 20px; border-radius: 14px; border: none;
-    background: #fff; color: #000; font-weight: 800; font-size: 16px;
-    box-shadow: 0 5px 0 #999; transition: transform 0.1s;
-}
-.main-btn:active { transform: translateY(5px); box-shadow: none; }
-
-.secondary-btn {
-    width: 100%; padding: 12px; margin-top: 10px; border-radius: 12px; border: none;
-    background: rgba(0,0,0,0.5); color: #fff;
-}
-
-.link-box { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin: 15px 0; font-family: monospace; font-size: 12px; word-break: break-all; }
-
-/* CONTROLS */
-.controls-bar { position: absolute; bottom: 50px; display: flex; gap: 20px; }
-.icon-btn {
-    width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px;
-    background: rgba(255,255,255,0.2); color: white; backdrop-filter: blur(5px);
-}
-.icon-btn.red { background: rgba(255, 50, 50, 0.6); }
-
-.status-pill { position: absolute; top: 50px; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; font-size: 12px; }
-
-.toast { position: fixed; bottom: 100px; background: white; color: black; padding: 10px 20px; border-radius: 20px; font-weight: bold; opacity: 0; transition: 0.3s; pointer-events: none;}
+.toast { position: fixed; top: 20px; background: #333; color: white; padding: 10px 20px; border-radius: 20px; opacity: 0; transition: 0.3s; pointer-events: none;}
 .toast.show { opacity: 1; }
-
-.pulse { animation: pulse 1.5s infinite; }
+.pulse { animation: pulse 2s infinite; }
 @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
