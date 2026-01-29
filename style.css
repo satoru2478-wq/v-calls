@@ -1,17 +1,15 @@
-body {
-  background: #020617;
-  color: white;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  font-family: system-ui;
-}
-
-button {
-  padding: 14px 28px;
-  font-size: 18px;
-  border-radius: 14px;
-  border: none;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system}
+body{background:radial-gradient(circle at top,#0f172a,#020617);color:#fff;height:100vh;overflow:hidden}
+canvas{position:fixed;inset:0;z-index:-1}
+.page{position:absolute;inset:0;display:none;justify-content:center;align-items:center;flex-direction:column;gap:20px}
+.page.active{display:flex}
+.logo{font-size:4rem;letter-spacing:4px}
+.tagline{opacity:.6}
+.glass{background:rgba(255,255,255,.08);backdrop-filter:blur(20px);border-radius:20px;border:1px solid rgba(255,255,255,.15)}
+.card{padding:30px;width:280px;text-align:center}
+button{margin-top:16px;padding:14px 24px;border-radius:14px;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:16px;cursor:pointer}
+.small{margin-top:10px;font-size:12px;opacity:.6}
+.call-ui{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;flex-direction:column}
+.status{margin-bottom:40px;opacity:.7}
+.controls{position:absolute;bottom:40px;display:flex;gap:20px;opacity:0;transition:opacity .4s}
+.controls.show{opacity:1}
