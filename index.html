@@ -2,59 +2,55 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#000000">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>V CALLS</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="app.js" defer></script>
 </head>
 <body>
     <canvas id="liquid-canvas"></canvas>
 
-    <div id="start-overlay" class="overlay active">
-        <h1 class="logo-text">V CALLS</h1>
-        <p class="subtitle">Secure • Low Latency • 3D Audio</p>
-        <button id="enter-app-btn" class="main-btn 3d-effect">ENTER EXPERIENCE</button>
+    <div id="start-overlay" class="overlay">
+        <h1 class="logo">V CALLS</h1>
+        <p>Secure • Anonymous • Encrypted</p>
+        <button id="enter-btn">ENTER APP</button>
     </div>
 
     <div id="app" class="hidden">
         
         <section id="home" class="page active">
             <div class="glass card">
-                <h2>Start Connection</h2>
-                <button id="create-btn" class="main-btn 3d-effect">⚡ Create Secure Link</button>
+                <h2>New Connection</h2>
+                <button id="create-btn" class="main-btn">Generate Secure Link</button>
             </div>
         </section>
 
         <section id="lobby" class="page">
             <div class="glass card">
-                
                 <div id="creator-view" class="hidden">
-                    <p class="label">Share this link:</p>
-                    <div class="link-box" id="link-display">Generating...</div>
-                    <button id="copy-btn" class="secondary-btn 3d-effect">Copy Link</button>
-                    <div class="spinner">Waiting for connection...</div>
+                    <p>Share this link:</p>
+                    <div class="link-box" id="link-txt">...</div>
+                    <button id="copy-btn" class="secondary-btn">Copy Link</button>
+                    <div class="spinner">Waiting for partner...</div>
                 </div>
 
                 <div id="joiner-view" class="hidden">
-                    <p class="label">Incoming Secure Call</p>
-                    <button id="join-btn" class="main-btn 3d-effect pulse">📞 Connect Now</button>
+                    <p>Incoming Call...</p>
+                    <button id="join-btn" class="main-btn pulse">📞 Join Call</button>
                 </div>
             </div>
         </section>
 
         <section id="call" class="page">
-            <div class="status-pill" id="status-txt">Establishing Link...</div>
-            
+            <div class="status-pill" id="status">Connecting...</div>
             <div class="controls-bar">
-                <button id="mute-btn" class="icon-btn 3d-effect">🎙️</button>
-                <button id="end-btn" class="icon-btn red 3d-effect">❌</button>
+                <button id="mute-btn" class="icon-btn">🎙️</button>
+                <button id="end-btn" class="icon-btn red">❌</button>
             </div>
         </section>
 
         <div id="toast" class="toast">Link Copied!</div>
     </div>
-
-    <script src="app.js"></script>
 </body>
 </html>
