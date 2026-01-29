@@ -1,4 +1,4 @@
-// --- CONFIGURATION ---
+// --- DOM ELEMENTS ---
 const ui = {
     overlay: document.getElementById('start-overlay'),
     app: document.getElementById('app'),
@@ -12,18 +12,7 @@ const ui = {
 
 const rtcConfig = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    iceCandidatePoolSize: 10 // Pre-fetch candidates for speed
-};
-
-const audioConstraints = {
-    audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        latency: 0, // Request lowest possible latency
-        sampleRate: 48000
-    },
-    video: false
+    iceCandidatePoolSize: 10
 };
 
 // --- STATE ---
@@ -31,29 +20,31 @@ let socket, pc, localStream;
 let roomID = null;
 let isCreator = false;
 let micOn = true;
-let candidateQueue = []; // THE FIX: Queue for storing ICE candidates
+let candidateQueue = [];
 
-// --- 1. INITIALIZATION ---
-// Auto-detect secure socket
+// Initialize Socket
 const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
 socket = new WebSocket(`${protocol}//${location.host}`);
 
-// Start Visualizer immediately (Idle mode)
+// Start Liquid Background Immediately
 initLiquid();
 
-// Button: Enter Fullscreen App
+// --- BUTTON LOGIC (Fixed) ---
+
+// 1. ENTER APP (The Fix: Works even if Fullscreen fails)
 document.getElementById('enter-app-btn').onclick = async () => {
     try {
         if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
         else if (document.documentElement.webkitRequestFullscreen) await document.documentElement.webkitRequestFullscreen();
-        // Keep screen awake
-        if('wakeLock' in navigator) await navigator.wakeLock.request('screen');
-    } catch(e){}
+    } catch(e) {
+        console.log("Fullscreen skipped"); // Ignore error, keep working
+    }
 
+    // Always show app
     ui.overlay.classList.add('hidden');
     ui.app.classList.remove('hidden');
-    
-    // Check URL for room
+
+    // Routing Logic
     const params = new URLSearchParams(window.location.search);
     if (params.has('room')) {
         roomID = params.get('room');
@@ -71,13 +62,10 @@ function showPage(name) {
     ui.pages[name].classList.add('active');
 }
 
-// --- 2. USER ACTIONS ---
-
-// Create Room
+// 2. CREATE LINK
 document.getElementById('create-btn').onclick = () => {
     roomID = Math.random().toString(36).substr(2, 6);
     isCreator = true;
-    
     const newUrl = `${window.location.origin}${window.location.pathname}?room=${roomID}`;
     window.history.pushState({path: newUrl}, '', newUrl);
 
@@ -87,225 +75,165 @@ document.getElementById('create-btn').onclick = () => {
     ui.joinerView.classList.add('hidden');
 };
 
-// Copy Link
+// 3. COPY LINK
 document.getElementById('copy-btn').onclick = () => {
     navigator.clipboard.writeText(ui.linkDisplay.innerText);
     ui.toast.classList.add('show');
     setTimeout(() => ui.toast.classList.remove('show'), 2000);
 };
 
-// Join Room
+// 4. JOIN CALL
 document.getElementById('join-btn').onclick = async () => {
-    ui.joinerView.innerHTML = "<p>Connecting...</p>";
     showPage('call');
-    ui.status.innerText = "Initializing Audio...";
-    
+    ui.status.innerText = "Initializing...";
     await startAudio();
     createPeerConnection();
-    send({ type: "ready" }); // Tell creator we are ready
+    send({ type: "ready" });
 };
 
-// --- 3. WEBRTC ENGINE (The Robust Part) ---
+// --- WEBRTC CORE ---
 
 async function startAudio() {
     try {
-        localStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+        localStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: { echoCancellation: true, noiseSuppression: true, latency: 0 } 
+        });
     } catch (e) {
-        alert("Audio Access Denied. Cannot call.");
-        throw e;
+        alert("Mic Error. Check Permissions.");
     }
 }
 
 function createPeerConnection() {
     pc = new RTCPeerConnection(rtcConfig);
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 
-    // Add local tracks
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-    // Handle Remote Stream (The Voice)
     pc.ontrack = (event) => {
-        const audio = document.createElement('audio');
-        audio.srcObject = event.streams[0];
-        audio.autoplay = true;
-        audio.playsInline = true; // Crucial for iOS
-        document.body.appendChild(audio);
-        
+        const aud = document.createElement('audio');
+        aud.srcObject = event.streams[0];
+        aud.autoplay = true;
+        aud.playsInline = true;
+        document.body.appendChild(aud);
         ui.status.innerText = "Connected • Live";
         
         // Connect Remote Audio to Visualizer
         connectAudioToLiquid(event.streams[0]);
     };
 
-    // Send ICE candidates immediately
     pc.onicecandidate = (event) => {
         if (event.candidate) send({ type: "candidate", candidate: event.candidate });
     };
 }
 
-// --- 4. SIGNALING (Fixed Logic) ---
+// --- SIGNALING ---
 
 socket.onmessage = async (e) => {
     const msg = JSON.parse(e.data);
     if (msg.room !== roomID) return;
 
-    try {
-        // A. CREATOR FLOW
-        if (msg.type === "ready" && isCreator) {
-            showPage('call');
-            ui.status.innerText = "Connecting...";
-            await startAudio();
-            createPeerConnection();
-            
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            send({ type: "offer", sdp: offer });
-        }
-
-        // B. JOINER FLOW
-        else if (msg.type === "offer" && !isCreator) {
-            if (!pc) createPeerConnection(); // Safeguard
-            
-            await pc.setRemoteDescription(msg.sdp);
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            send({ type: "answer", sdp: answer });
-            
-            processCandidateQueue(); // Apply any queued candidates
-        }
-
-        // C. ANSWER HANDLING
-        else if (msg.type === "answer" && isCreator) {
-            await pc.setRemoteDescription(msg.sdp);
-            processCandidateQueue(); // Apply any queued candidates
-        }
-
-        // D. ICE CANDIDATE HANDLING (With Queue)
-        else if (msg.type === "candidate") {
-            if (pc && pc.remoteDescription) {
-                await pc.addIceCandidate(msg.candidate);
-            } else {
-                // If remote desc isn't ready, QUEUE IT.
-                // This prevents "failed to set remote candidate" errors.
-                candidateQueue.push(msg.candidate);
-            }
-        }
-
-    } catch (err) {
-        console.error("Signaling Error:", err);
+    if (msg.type === "ready" && isCreator) {
+        showPage('call');
+        ui.status.innerText = "Connecting...";
+        await startAudio();
+        createPeerConnection();
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        send({ type: "offer", sdp: offer });
+    }
+    else if (msg.type === "offer" && !isCreator) {
+        if (!pc) createPeerConnection();
+        await pc.setRemoteDescription(msg.sdp);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        send({ type: "answer", sdp: answer });
+        processQueue();
+    }
+    else if (msg.type === "answer" && isCreator) {
+        await pc.setRemoteDescription(msg.sdp);
+        processQueue();
+    }
+    else if (msg.type === "candidate") {
+        if (pc && pc.remoteDescription) await pc.addIceCandidate(msg.candidate);
+        else candidateQueue.push(msg.candidate);
     }
 };
 
-async function processCandidateQueue() {
-    if (!pc) return;
-    while (candidateQueue.length > 0) {
-        const cand = candidateQueue.shift();
-        try { await pc.addIceCandidate(cand); } catch(e) {}
-    }
+async function processQueue() {
+    while(candidateQueue.length) await pc.addIceCandidate(candidateQueue.shift());
 }
 
-function send(data) {
-    data.room = roomID;
-    socket.send(JSON.stringify(data));
-}
+function send(d) { d.room = roomID; socket.send(JSON.stringify(d)); }
 
-// --- 5. UI UTILS ---
+// --- UI UTILS ---
 document.getElementById('mute-btn').onclick = function() {
     micOn = !micOn;
     localStream.getAudioTracks()[0].enabled = micOn;
-    this.innerText = micOn ? "🎙️" : "🔇";
     this.classList.toggle('red', !micOn);
 };
+document.getElementById('end-btn').onclick = () => location.href = location.origin;
 
-document.getElementById('end-btn').onclick = () => window.location = window.location.origin;
-
-// --- 6. 3D LIQUID VISUALIZER ---
+// --- 3D LIQUID VISUALIZER ---
 let analyser, dataArray;
 
 function initLiquid() {
-    const canvas = document.getElementById('liquid-canvas');
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const cvs = document.getElementById('liquid-canvas');
+    const ren = new THREE.WebGLRenderer({ canvas: cvs, alpha: true, antialias: true });
+    ren.setSize(window.innerWidth, window.innerHeight);
+    ren.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
-    camera.position.z = 3.5;
+    const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
+    cam.position.z = 3;
 
-    // Dramatic Lighting for 3D look
-    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambient);
-    
-    const light1 = new THREE.PointLight(0x00ffff, 2, 50);
-    light1.position.set(5, 5, 5);
-    scene.add(light1);
+    // Light
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const pl = new THREE.PointLight(0xffffff, 1);
+    pl.position.set(5,5,5);
+    scene.add(pl);
 
-    const light2 = new THREE.PointLight(0xff00ff, 2, 50);
-    light2.position.set(-5, -5, 5);
-    scene.add(light2);
-
-    // Liquid Material
-    const geo = new THREE.IcosahedronGeometry(1.4, 30);
-    const mat = new THREE.MeshPhysicalMaterial({
-        color: 0x333333,
-        roughness: 0,
-        metalness: 0.2,
-        transmission: 0.1,
-        clearcoat: 1,
-        clearcoatRoughness: 0,
-        emissive: 0x111111
+    // Liquid Blob
+    const geo = new THREE.IcosahedronGeometry(1.2, 10);
+    const mat = new THREE.MeshPhongMaterial({ 
+        color: 0x22a6b3, 
+        shininess: 100,
+        specular: 0xffffff,
+        transparent: true,
+        opacity: 0.9
     });
-
     const blob = new THREE.Mesh(geo, mat);
     scene.add(blob);
 
-    function animate() {
-        requestAnimationFrame(animate);
-
-        let freq = 0;
-        if (analyser) {
+    function anim() {
+        requestAnimationFrame(anim);
+        let boost = 0;
+        if(analyser) {
             analyser.getByteFrequencyData(dataArray);
-            freq = dataArray[4] / 255; // React to bass
+            boost = (dataArray[4]/255) * 0.5;
         }
 
-        const time = performance.now() * 0.001;
-        blob.rotation.y = time * 0.15;
-        blob.rotation.z = time * 0.1;
+        const t = performance.now() * 0.001;
+        blob.rotation.y = t * 0.2;
+        blob.rotation.z = t * 0.1;
 
-        // Wave Distortion
+        // Blob Movement
         const pos = geo.attributes.position;
         const v = new THREE.Vector3();
-        
-        for (let i = 0; i < pos.count; i++) {
+        for(let i=0; i<pos.count; i++){
             v.fromBufferAttribute(pos, i);
             v.normalize();
-            
-            // Dynamic Wave Math
-            const wave = 0.2 * Math.sin(v.x * 3 + time + freq * 4) +
-                         0.2 * Math.cos(v.y * 3 + time + freq * 4);
-            
-            // Pulse on Audio
-            const scale = 1.4 + wave + (freq * 0.3);
-            
-            v.multiplyScalar(scale);
+            const wave = 0.2 * Math.sin(v.x*4 + t + boost*5) + 0.2 * Math.cos(v.y*4 + t);
+            v.multiplyScalar(1.2 + wave + boost);
             pos.setXYZ(i, v.x, v.y, v.z);
         }
-        
-        geo.computeVertexNormals();
         pos.needsUpdate = true;
-        
-        // Color Shift based on audio
-        if(freq > 0.1) {
-            blob.material.emissive.setHSL((time * 0.1) % 1, 0.8, freq * 0.5);
-        }
-
-        renderer.render(scene, camera);
+        geo.computeVertexNormals();
+        ren.render(scene, cam);
     }
-    animate();
-
+    anim();
+    
     window.onresize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        ren.setSize(window.innerWidth, window.innerHeight);
+        cam.aspect = window.innerWidth/window.innerHeight;
+        cam.updateProjectionMatrix();
     };
 }
 
