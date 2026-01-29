@@ -4,63 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>V CALLS</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <div id="gradient-bg"></div>
     <canvas id="liquid-canvas"></canvas>
 
-    <section class="page active" id="home">
-        <h1 class="logo">V CALLS</h1>
-        <div class="glass card">
-            <h2>Secure Connection</h2>
-            <button id="create-btn" class="main-btn">✨ Create Room</button>
-            <p class="small">Tap to enter Fullscreen</p>
-        </div>
-    </section>
+    <div id="start-overlay" class="overlay active">
+        <h1 class="logo-text">V CALLS</h1>
+        <p class="subtitle">Secure • Low Latency • 3D Audio</p>
+        <button id="enter-app-btn" class="main-btn 3d-effect">ENTER EXPERIENCE</button>
+    </div>
 
-    <section class="page" id="lobby">
-        <div class="glass card">
-            <h2>Lobby</h2>
-            
-            <div id="creator-ui" class="hidden">
-                <p>Share this link:</p>
-                <div class="link-container">
-                    <input type="text" id="link-box" readonly>
-                    <button id="copy-btn">📋</button>
+    <div id="app" class="hidden">
+        
+        <section id="home" class="page active">
+            <div class="glass card">
+                <h2>Start Connection</h2>
+                <button id="create-btn" class="main-btn 3d-effect">⚡ Create Secure Link</button>
+            </div>
+        </section>
+
+        <section id="lobby" class="page">
+            <div class="glass card">
+                
+                <div id="creator-view" class="hidden">
+                    <p class="label">Share this link:</p>
+                    <div class="link-box" id="link-display">Generating...</div>
+                    <button id="copy-btn" class="secondary-btn 3d-effect">Copy Link</button>
+                    <div class="spinner">Waiting for connection...</div>
                 </div>
-                <div class="loader">Waiting for partner...</div>
-            </div>
 
-            <div id="joiner-ui" class="hidden">
-                <p>Incoming Call...</p>
-                <button id="join-btn" class="main-btn pulse">📞 Answer</button>
-            </div>
-        </div>
-    </section>
-
-    <section class="page" id="call">
-        <div class="call-ui">
-            <div class="status" id="status-txt">Connecting...</div>
-            
-            <div class="controls-container">
-                <div class="controls glass-panel" id="controls">
-                    <button id="mute-btn" class="icon-btn">🎙️</button>
-                    <button id="chat-toggle" class="icon-btn">💬</button>
-                    <button id="end-btn" class="icon-btn red">❌</button>
+                <div id="joiner-view" class="hidden">
+                    <p class="label">Incoming Secure Call</p>
+                    <button id="join-btn" class="main-btn 3d-effect pulse">📞 Connect Now</button>
                 </div>
             </div>
+        </section>
 
-            <div id="chat-box" class="hidden">
-                <div id="messages"></div>
-                <input type="text" id="chat-input" placeholder="Message..." autocomplete="off">
+        <section id="call" class="page">
+            <div class="status-pill" id="status-txt">Establishing Link...</div>
+            
+            <div class="controls-bar">
+                <button id="mute-btn" class="icon-btn 3d-effect">🎙️</button>
+                <button id="end-btn" class="icon-btn red 3d-effect">❌</button>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <div id="toast" class="toast">Link Copied!</div>
+    </div>
 
     <script src="app.js"></script>
 </body>
