@@ -6,14 +6,13 @@
     <title>V CALLS</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="app.js" defer></script>
 </head>
 <body>
     <canvas id="liquid-canvas"></canvas>
 
     <div id="start-overlay" class="overlay">
         <h1 class="logo">V CALLS</h1>
-        <p>Secure • Anonymous • Encrypted</p>
+        <p>Crystal Clear • Secure • 3D Audio</p>
         <button id="enter-btn">ENTER APP</button>
     </div>
 
@@ -21,22 +20,22 @@
         
         <section id="home" class="page active">
             <div class="glass card">
-                <h2>New Connection</h2>
-                <button id="create-btn" class="main-btn">Generate Secure Link</button>
+                <h2>New Call</h2>
+                <button id="create-btn" class="main-btn">Generate Link</button>
             </div>
         </section>
 
         <section id="lobby" class="page">
             <div class="glass card">
                 <div id="creator-view" class="hidden">
-                    <p>Share this link:</p>
+                    <p>Share Link:</p>
                     <div class="link-box" id="link-txt">...</div>
-                    <button id="copy-btn" class="secondary-btn">Copy Link</button>
-                    <div class="spinner">Waiting for partner...</div>
+                    <button id="copy-btn" class="secondary-btn">Copy</button>
+                    <div class="spinner">Waiting...</div>
                 </div>
 
                 <div id="joiner-view" class="hidden">
-                    <p>Incoming Call...</p>
+                    <p>Ready to Connect?</p>
                     <button id="join-btn" class="main-btn pulse">📞 Join Call</button>
                 </div>
             </div>
@@ -44,13 +43,24 @@
 
         <section id="call" class="page">
             <div class="status-pill" id="status">Connecting...</div>
+
+            <div class="chat-room">
+                <div id="chat-msgs" class="chat-msgs"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off">
+                    <button id="send-btn">➤</button>
+                </div>
+            </div>
+            
             <div class="controls-bar">
                 <button id="mute-btn" class="icon-btn">🎙️</button>
                 <button id="end-btn" class="icon-btn red">❌</button>
             </div>
         </section>
 
-        <div id="toast" class="toast">Link Copied!</div>
+        <div id="toast" class="toast">Copied!</div>
     </div>
+
+    <script src="app.js"></script>
 </body>
 </html>
