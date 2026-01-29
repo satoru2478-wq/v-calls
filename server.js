@@ -1,40 +1,35 @@
 import { createServer } from 'http';
 import { readFileSync, existsSync } from 'fs';
 import { WebSocketServer } from 'ws';
-import path from 'path';
 
 const PORT = process.env.PORT || 3000;
 
+// Serve the single index.html file for all routes
 const server = createServer((req, res) => {
-    let url = req.url.split('?')[0];
-    if (url === '/') url = '/index.html';
-    
-    const filePath = "." + url;
-    const ext = path.extname(filePath).toLowerCase();
-    
-    const mime = { 
-        '.html': 'text/html', 
-        '.js': 'text/javascript', 
-        '.css': 'text/css'
-    };
+    // If asking for favicon, ignore
+    if (req.url === '/favicon.ico') { res.writeHead(204); return res.end(); }
 
-    if (existsSync(filePath)) {
-        res.writeHead(200, { 'Content-Type': mime[ext] || 'application/octet-stream' });
-        res.end(readFileSync(filePath));
+    // Always serve index.html
+    if (existsSync('index.html')) {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(readFileSync('index.html'));
     } else {
         res.writeHead(404);
-        res.end();
+        res.end("Error: index.html not found.");
     }
 });
 
 const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
-    ws.on("message", (msg) => {
-        wss.clients.forEach((c) => {
-            if (c !== ws && c.readyState === 1) c.send(msg.toString());
+    ws.on("message", (data) => {
+        // Broadcast to everyone else
+        wss.clients.forEach((client) => {
+            if (client !== ws && client.readyState === 1) {
+                client.send(data.toString());
+            }
         });
     });
 });
 
-server.listen(PORT, () => console.log(`Server running on ${PORT}`));
+server.listen(PORT, () => console.log(`\n>>> V CALLS RUNNING ON PORT ${PORT} <<<\n`));
