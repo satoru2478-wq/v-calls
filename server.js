@@ -15,8 +15,7 @@ const server = createServer((req, res) => {
     const mime = { 
         '.html': 'text/html', 
         '.js': 'text/javascript', 
-        '.css': 'text/css',
-        '.json': 'application/json'
+        '.css': 'text/css'
     };
 
     if (existsSync(filePath)) {
@@ -38,4 +37,4 @@ wss.on("connection", (ws) => {
     });
 });
 
-server.listen(PORT, () => console.log(`Server Ready on ${PORT}`));
+server.listen(PORT, () => console.log(`Running on ${PORT}`));
