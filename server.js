@@ -5,9 +5,7 @@ import path from 'path';
 
 const PORT = process.env.PORT || 3000;
 
-// 1. Serve Static Files (HTML/CSS/JS)
 const server = createServer((req, res) => {
-    // Handle URL parameters by stripping them
     let url = req.url.split('?')[0];
     if (url === '/') url = '/index.html';
     
@@ -17,7 +15,8 @@ const server = createServer((req, res) => {
     const mime = { 
         '.html': 'text/html', 
         '.js': 'text/javascript', 
-        '.css': 'text/css' 
+        '.css': 'text/css',
+        '.json': 'application/json'
     };
 
     if (existsSync(filePath)) {
@@ -29,18 +28,14 @@ const server = createServer((req, res) => {
     }
 });
 
-// 2. High-Performance WebSocket
 const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
-    ws.on("message", (raw) => {
-        // Instant Broadcast
-        wss.clients.forEach((client) => {
-            if (client !== ws && client.readyState === 1) {
-                client.send(raw.toString());
-            }
+    ws.on("message", (msg) => {
+        wss.clients.forEach((c) => {
+            if (c !== ws && c.readyState === 1) c.send(msg.toString());
         });
     });
 });
 
-server.listen(PORT, () => console.log(`Engine Running on ${PORT}`));
+server.listen(PORT, () => console.log(`Server Ready on ${PORT}`));
