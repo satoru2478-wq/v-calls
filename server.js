@@ -5,8 +5,7 @@ const wss = new WebSocketServer({ port: PORT });
 
 wss.on("connection", (ws) => {
   ws.on("message", (msg) => {
-    // Broadcast message to everyone else
-    // We rely on the client to filter by "room" ID
+    // Broadcast to everyone else (filtering happens on client side)
     wss.clients.forEach((client) => {
       if (client !== ws && client.readyState === 1) {
         client.send(msg.toString());
@@ -15,4 +14,4 @@ wss.on("connection", (ws) => {
   });
 });
 
-console.log("V CALLS WebSocket server running");
+console.log("V CALLS Server Running");
