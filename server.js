@@ -5,17 +5,23 @@ import path from 'path';
 
 const PORT = process.env.PORT || 3000;
 
-// Serve HTML/CSS/JS files
+// 1. Serve Static Files (HTML/CSS/JS)
 const server = createServer((req, res) => {
-    let filePath = req.url === '/' ? '/index.html' : req.url;
-    filePath = "." + filePath;
-
-    const ext = String(path.extname(filePath)).toLowerCase();
-    const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
-    const type = mime[ext] || 'application/octet-stream';
+    // Handle URL parameters by stripping them
+    let url = req.url.split('?')[0];
+    if (url === '/') url = '/index.html';
+    
+    const filePath = "." + url;
+    const ext = path.extname(filePath).toLowerCase();
+    
+    const mime = { 
+        '.html': 'text/html', 
+        '.js': 'text/javascript', 
+        '.css': 'text/css' 
+    };
 
     if (existsSync(filePath)) {
-        res.writeHead(200, { 'Content-Type': type });
+        res.writeHead(200, { 'Content-Type': mime[ext] || 'application/octet-stream' });
         res.end(readFileSync(filePath));
     } else {
         res.writeHead(404);
@@ -23,17 +29,18 @@ const server = createServer((req, res) => {
     }
 });
 
-// WebSocket Server
+// 2. High-Performance WebSocket
 const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
-    ws.on("error", console.error);
-    ws.on("message", (msg) => {
-        // Broadcast to all clients
-        wss.clients.forEach((c) => {
-            if (c !== ws && c.readyState === 1) c.send(msg.toString());
+    ws.on("message", (raw) => {
+        // Instant Broadcast
+        wss.clients.forEach((client) => {
+            if (client !== ws && client.readyState === 1) {
+                client.send(raw.toString());
+            }
         });
     });
 });
 
-server.listen(PORT, () => console.log(`Server running on ${PORT}`));
+server.listen(PORT, () => console.log(`Engine Running on ${PORT}`));
